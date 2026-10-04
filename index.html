@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">💰</span>
+        <span class="logo-text">ExpenseTracker</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-ghost" id="themeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">🌙</button>
+        <button class="btn btn-primary" id="openModalBtn">
+          <span class="btn-icon">+</span> Add Transaction
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- Summary Cards -->
+    <section class="summary-section" aria-label="Financial summary">
+      <div class="card summary-card balance-card">
+        <div class="card-label">Current Balance</div>
+        <div class="card-amount" id="totalBalance">₹0.00</div>
+        <div class="card-sub" id="balanceSub">No transactions yet</div>
+      </div>
+      <div class="card summary-card income-card">
+        <div class="card-icon">↑</div>
+        <div class="card-label">Total Income</div>
+        <div class="card-amount income-amount" id="totalIncome">₹0.00</div>
+      </div>
+      <div class="card summary-card expense-card">
+        <div class="card-icon">↓</div>
+        <div class="card-label">Total Expenses</div>
+        <div class="card-amount expense-amount" id="totalExpenses">₹0.00</div>
+      </div>
+    </section>
+
+    <!-- Monthly Summary Banner -->
+    <section class="monthly-section" aria-label="Monthly summary">
+      <div class="card monthly-card">
+        <div class="monthly-header">
+          <h2 class="section-title">📅 Monthly Summary</h2>
+          <div class="month-nav">
+            <button class="btn btn-ghost icon-btn" id="prevMonth" aria-label="Previous month">‹</button>
+            <span class="current-month" id="currentMonthLabel"></span>
+            <button class="btn btn-ghost icon-btn" id="nextMonth" aria-label="Next month">›</button>
+          </div>
+        </div>
+
+        <!-- Top stats row -->
+        <div class="monthly-stats">
+          <div class="monthly-stat">
+            <span class="monthly-stat-label">Income</span>
+            <span class="monthly-stat-value income-text" id="monthlyIncome">₹0.00</span>
+          </div>
+          <div class="monthly-stat-divider"></div>
+          <div class="monthly-stat">
+            <span class="monthly-stat-label">Expenses</span>
+            <span class="monthly-stat-value expense-text" id="monthlyExpenses">₹0.00</span>
+          </div>
+          <div class="monthly-stat-divider"></div>
+          <div class="monthly-stat">
+            <span class="monthly-stat-label">Net Savings</span>
+            <span class="monthly-stat-value" id="monthlyNet">₹0.00</span>
+          </div>
+          <div class="monthly-stat-divider"></div>
+          <div class="monthly-stat">
+            <span class="monthly-stat-label">Savings Rate</span>
+            <span class="monthly-stat-value" id="monthlySavingsRate">0%</span>
+          </div>
+          <div class="monthly-stat-divider"></div>
+          <div class="monthly-stat">
+            <span class="monthly-stat-label">Transactions</span>
+            <span class="monthly-stat-value" id="monthlyCount">0</span>
+          </div>
+        </div>
+
+        <!-- Monthly category breakdown -->
+        <div class="monthly-breakdown" id="monthlyBreakdown">
+          <div class="monthly-breakdown-title">Expense Breakdown by Category</div>
+          <div class="monthly-cat-list" id="monthlyCatList"></div>
+          <div class="monthly-empty" id="monthlyEmpty">No expenses this month</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts + Transactions Layout -->
+    <div class="content-grid">
+
+      <!-- Left: Charts -->
+      <aside class="charts-panel">
+        <div class="card chart-card">
+          <h2 class="section-title">📊 Category Breakdown</h2>
+          <div class="chart-type-toggle">
+            <button class="chart-tab active" data-chart="expense">Expenses</button>
+            <button class="chart-tab" data-chart="income">Income</button>
+          </div>
+          <!-- Doughnut -->
+          <div class="chart-wrapper">
+            <canvas id="categoryChart" aria-label="Category pie chart"></canvas>
+            <div class="chart-empty" id="chartEmpty">No data to display</div>
+          </div>
+          <ul class="chart-legend" id="chartLegend" aria-label="Chart legend"></ul>
+
+          <!-- Horizontal bar breakdown -->
+          <div class="cat-bars" id="catBars" aria-label="Category bar breakdown"></div>
+        </div>
+
+        <div class="card chart-card">
+          <h2 class="section-title">📈 Monthly Trend</h2>
+          <div class="chart-wrapper chart-wrapper--bar">
+            <canvas id="trendChart" aria-label="Monthly trend bar chart"></canvas>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right: Transactions -->
+      <section class="transactions-panel">
+        <div class="card transactions-card">
+          <div class="transactions-header">
+            <h2 class="section-title">🧾 Transactions</h2>
+            <div class="filter-row">
+              <div class="search-box">
+                
+                <input type="text" id="searchInput" placeholder="Search transactions…" aria-label="Search transactions" />
+              </div>
+              <select id="filterType" class="filter-select" aria-label="Filter by type">
+                <option value="all">All Types</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+              <select id="filterCategory" class="filter-select" aria-label="Filter by category">
+                <option value="all">All Categories</option>
+              </select>
+              <select id="sortOrder" class="filter-select" aria-label="Sort order">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="highest">Highest Amount</option>
+                <option value="lowest">Lowest Amount</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="transactions-list" id="transactionsList" role="list">
+            <!-- Populated by JS -->
+          </div>
+
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">💸</div>
+            <p class="empty-title">No transactions yet</p>
+            <p class="empty-sub">Click "Add Transaction" to get started</p>
+          </div>
+
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ===== ADD / EDIT MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Add Transaction</h2>
+        <button class="modal-close" id="closeModalBtn" aria-label="Close modal">✕</button>
+      </div>
+
+      <form class="modal-form" id="transactionForm" novalidate>
+        <!-- Type Toggle -->
+        <div class="type-toggle" role="group" aria-label="Transaction type">
+          <button type="button" class="type-btn active" data-type="expense" id="expenseBtn">
+            <span>↓</span> Expense
+          </button>
+          <button type="button" class="type-btn" data-type="income" id="incomeBtn">
+            <span>↑</span> Income
+          </button>
+        </div>
+
+        <input type="hidden" id="transactionType" value="expense" />
+        <input type="hidden" id="editId" value="" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="transactionAmount">Amount <span class="required">*</span></label>
+            <div class="input-with-prefix">
+              <span class="input-prefix">₹</span>
+              <input type="number" id="transactionAmount" placeholder="0.00" min="0.01" step="0.01" required aria-required="true" aria-describedby="amountError" />
+            </div>
+            <span class="field-error" id="amountError" role="alert"></span>
+            <span class="field-hint" id="amountHint"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="transactionDate">Date <span class="required">*</span></label>
+            <input type="date" id="transactionDate" required aria-required="true" aria-describedby="dateError" />
+            <span class="field-error" id="dateError" role="alert"></span>
+            <span class="field-hint" id="dateHint"></span>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="transactionCategory">Category <span class="required">*</span></label>
+            <select id="transactionCategory" required aria-required="true" aria-describedby="categoryError">
+              <option value="">Select category…</option>
+            </select>
+            <span class="field-error" id="categoryError" role="alert"></span>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="transactionDescription">Description
+              <span class="label-optional">(optional)</span>
+            </label>
+            <input type="text" id="transactionDescription" placeholder="What was this for?" maxlength="100" aria-describedby="charCount descHint" />
+            <div class="desc-footer">
+              <span class="field-hint" id="descHint"></span>
+              <span class="char-count" id="charCount">0 / 100</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="cancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="submitBtn">Add Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== DELETE CONFIRM MODAL ===== -->
+  <div class="modal-overlay" id="deleteOverlay" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <h2 class="modal-title" id="deleteTitle">Delete Transaction</h2>
+        <button class="modal-close" id="closeDeleteBtn" aria-label="Close">✕</button>
+      </div>
+      <div class="delete-body">
+        <div class="delete-icon">🗑️</div>
+        <p>Are you sure you want to delete this transaction? This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="cancelDeleteBtn">Cancel</button>
+        <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
